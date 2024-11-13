@@ -1,0 +1,256 @@
+#Задание 1
+# импорт пакетов
+import pandas as pd
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+import matplotlib.mlab as mlab
+import matplotlib
+from scipy.stats import mannwhitneyu 
+from sklearn.neighbors import KNeighborsClassifier 
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import GradientBoostingClassifier
+plt.style.use('ggplot')
+from matplotlib.pyplot import figure
+%matplotlib inline
+matplotlib.rcParams['figure.figsize'] = (24,16)
+v = None
+# чтение данных
+df = pd.read_csv('train.csv')
+df.info()
+#проверим пропущенные значения
+df.isnull().sum()
+#отбор числовых колонок
+df_numeric = df.select_dtypes(include=[np.number])
+numeric_cols = df_numeric.columns.values
+print(numeric_cols)
+# отбор нечисловых колонок 
+# отбор нечислловых колонок для train
+df_non_numeric = df.select_dtypes(exclude=[np.number])
+non_numeric_cols = df_non_numeric.columns.values
+print(numeric_cols)
+print(non_numeric_cols)
+cols = df.columns
+colors = ['#FFC0CB', '#008000'] 
+a = sns.heatmap(df[cols].isnull(), cmap=sns.color_palette(colors))
+for i, col in enumerate(df.columns):
+    pct_missing = np.mean(df[col].isnull())
+    print('{} - {}%'.format(col, round(pct_missing*100)))
+    if i>=10:
+        break
+# отбросить признак с большим количеством пропущенных данных cabin
+df.drop(columns = 'Cabin', axis = 1, inplace = True)
+print(df)
+# заменить в возрасте пропуски на медианное значение 
+med = df['Age'].median()
+print(med)
+df['Age'] = df['Age'].fillna(med)
+# удалить строки в Embarked
+df.dropna(inplace = True)
+df.isnull().sum()
+#PassengerId — идентификатор пассажира
+#Survived — погиб (0) или выжил (1)
+#Pclass — класс билета: первый (1), второй (2) или третий (3)
+#Name — имя пассажира
+#Sex — пол
+#Age — возраст
+#SibSp — количество братьев и сестер или супругов (siblings and spouses) на борту
+#Parch — количество родителей и детей (parents and children) на борту
+#Ticket — номер билета
+#Fare — стоимость билета
+#Embarked — порт посадки (C — Шербур; Q — Квинстаун; S — Саутгемптон)
+#категориальные переменные 
+# применим one-hot encoding к переменной Sex (пол) с помощью функции pd.get_dummies()
+pd.get_dummies(df['Sex']).head(3)
+# вновь скачаем датафрейм с единственным столбцом Sex
+previous = pd.read_csv('train.csv')[['Sex']]
+previous.head()
+# закодируем переменную через 0 и 1
+pd.get_dummies(previous['Sex'], dtype = int).head(3)
+# удалим первый столбец, он избыточен
+sex = pd.get_dummies(df['Sex'], drop_first = True)
+sex.head(3)
+# закодируем переменные чере 0 и 1 Pclass и Embarked.
+embarked = pd.get_dummies(df['Embarked'], drop_first = True)
+pclass = pd.get_dummies(df['Pclass'], drop_first = True)
+df = pd.concat([df, pclass, sex, embarked], axis = 1)
+df.head(3)
+#отбор признаков
+# применим метод .drop() к соответствующим столбцам
+df.drop(['PassengerId', 'Pclass', 'Name', 'Sex', 'Ticket', 'Embarked'], axis = 1, inplace = True)
+df.head(3)
+# нормализация данных
+# импортируем класс StandardScaler
+from sklearn.preprocessing import StandardScaler
+# создадим объект этого класса
+scaler = StandardScaler()
+# выберем те столбцы, которые мы хотим масштабировать
+cols_to_scale = ['Age', 'Fare']
+# рассчитаем среднее арифметическое и СКО для масштабирования данных
+scaler.fit(df[cols_to_scale])
+# применим их
+df[cols_to_scale] = scaler.transform(df[cols_to_scale])
+# посмотрим на результат
+df.head(3)
+df.columns
+#Название переменных 2 и 3 (второй и третий классы) выражены числами, а не строками (их выдает отсутствие кавычек в коде ниже). Так быть не должно.
+#Преобразуем эти переменные в тип str через функцию map()
+df.columns = df.columns.map(str)
+df.columns
+#разделим обущающую выборку на признаки и целевую переменную
+# поместим в X_df все кроме столбца Survived
+x_df = df.drop('Survived', axis = 1)
+# столбец 'Survived' станет нашей целевой переменной (y_df)
+y_df = df['Survived']
+x_df.head(3)
+# обучение модели логистической регрессии
+# импортируем логистическую регрессию из модуля linear_model библиотеки sklearn
+from sklearn.linear_model import LogisticRegression
+# создадим объект этого класса и запишем его в переменную model
+model = LogisticRegression()
+# обучим нашу модель
+model.fit(x_df, y_df)
+# прогнозируем
+y_pred_df = model.predict(x_df)
+# построим матрицу ошибок
+from sklearn.metrics import confusion_matrix
+ 
+# передадим ей фактические и прогнозные значения
+conf_matrix = confusion_matrix(y_df, y_pred_df)
+ 
+# преобразуем в датафрейм
+conf_matrix_df = pd.DataFrame(conf_matrix)
+conf_matrix_df
+# рассчитаем метрику accuracy вручную
+round((480 + 237)/(480 + 237 + 69 + 103), 3)
+#0,807 - На обучающей выборке наша модель показала результат в 80,7%.
+# в данных увидела опечатки в имени, но никак не смогла придумать как их заменить, там где-то master
+#Задание 2 
+# загрузка библиотек
+import pandas as pd
+import numpy as np 
+import missingno as msno
+import seaborn as sns
+import matplotlib.pyplot as plt 
+from scipy.stats import mannwhitneyu 
+from sklearn.neighbors import KNeighborsClassifier 
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import GradientBoostingClassifier
+# чтение данных
+df = pd.read_csv('gender_submission.csv') 
+test = pd.read_csv('test.csv') 
+train = pd.read_csv('train.csv')
+# просмотр пропущенных данных
+msno.matrix(train)
+msno.matrix(test)
+# объединение данных
+y = test.merge(df,on='PassengerId', how = 'right')
+y = pd.concat([train,test])
+# количество мужчин/женщин на борту
+y.groupby('Sex')['PassengerId'].count()
+# количество человек с разными классами билетов
+y.groupby('Pclass')['PassengerId'].count()
+# описательная статистика всех данных
+y.describe()
+# один спасенный младенец на борту – 2 месячная Миллвина Дин
+y[train.Age==0.17]
+# уникальное количество братьев и сестер на борту
+y.SibSp.unique()
+# уникальное количество родителей на борту 
+y.Parch.unique()
+# отличался ли возраст пасажиров в группах мужчины- женщины, была ли разница для них в тарифах билетов
+men = y[y.Sex == 'male'] 
+women = y[y.Sex == 'female']
+stat, p = mannwhitneyu(men.Age, women.Age)
+print('Критерий значимости = %.3f' % (p))
+alpha = 0.1
+if p > alpha:
+  print('Возраст не отличался')
+else:
+  print('разный возраст, мужчины ', 
+        men.Age.mean(),', женщины ', women.Age.mean())
+  stat, p = mannwhitneyu(men.Fare, women.Fare)
+print('Критерий значимости = %.3f' % (p))
+alpha = 0.1
+if p > alpha:
+  print('Возраст не отличался')
+else: 
+  print('разный тариф, мужчины ',
+        men.Fare.mean(),', женщины ', women.Fare.mean())
+# женщинам путешествовать обходилось дороже
+# как они распределились по классам кают
+s = pd.DataFrame(y.groupby(['Sex', 'Pclass'])['PassengerId'].count().
+                 reset_index())
+f = s[s.Sex == 'female'] 
+f['ratio'] = f.PassengerId/f.PassengerId.sum()*100
+m = s[s.Sex == 'male']
+m['ratio'] = m.PassengerId/m.PassengerId.sum()*100
+# Женщины предпочли первый клас чаще мужчин
+# Заменим пропуски возраста средним значением 
+y.Age = y.Age.fillna(y.Age.mean())
+y.Age.describe()
+# В колонке кабин мало значений, удалим их. Также удалим имя, порт посадки на борт и номер билета, так как такая информация не несет предсказательной силы.
+# Визуализация параметра Survived
+y = y.drop(labels=['Cabin','Name','Ticket','Embarked'], axis=1)
+sns.catplot(data = y,y='Survived',x='Sex',col='Pclass',
+            kind='bar', saturation=0.5)
+# Во всех классах женщины спаслись больше мужчин, это говорит о героизме мужчин на борту, так как мы ранее узнали, что их было значительно больше, а также наблюдаем, что пассажиров первого класса спаслось больше( проверим это далее)
+sns.catplot(data = y,hue = 'Survived', x = 'Sex',
+            kind='count', saturation=0.5)
+# На этом графике хорошо видно соотношение выживших мужчин и женщин после крушения. Предположим, что люди 'богатый' сегмент спасались чаще чем остальные
+sns.catplot(data = y,hue = 'Survived', x = 'Pclass',
+            kind='count', saturation=0.5)
+# Подтверждаем гипотизу, большинство погибших- это пассажиры третьего класса, а наименьшее число гиблей и наибольшее выживших мы наблюдаем в первом классе. Ранее мы уже изучили, что большинство пассажиров в третьем классе- это мужчины. Можно уловить связь - вероятность погибнуть у мужчины в третьем классе больше, чем вероятность погибнуть у всех остальных пассажиров. Соотношение погибших-выживших во втором классе примерно одинаковое. 
+# Поделим возраст на 7 перцентилей
+y.Age.hist()
+# Из распределения, видно, что людей 30 лет погибло больше остальных, но и среднее у нас в этом значении. 
+# Разобьем всех на 7 групп с помощью категоризации.
+y['Age_cat'] = pd.qcut(y.Age,7)
+sns.catplot(data = y,hue = 'Survived', x = 'Age_cat',
+            kind='count', saturation=0.5) 
+plt.xticks(rotation=45)
+child= y[y.Age<6]
+sns.catplot(data = child,hue = 'Survived', 
+            x = 'Sex',kind='count', saturation=0.5)
+grand= y[y.Age>50]
+sns.catplot(data = grand,hue = 'Survived', 
+            x = 'Sex',kind='count', saturation=0.5)
+# В целом на корабле предпочли спасать женщин и детей в первую очередь.
+h = y[(y.Age>=29)&(y.Age<=30)]
+sns.catplot(data = h,hue = 'Survived',
+            x = 'Sex',kind='count', saturation=0.5)
+# Опять же, высокий бар дали мужчины. Проверим как наличие семьи на борту повлияло на выживаемость
+y = y.drop('Age_cat', axis=1)
+y['family'] = y['Parch'] + y['SibSp']
+sns.catplot(data = y,hue = 'Survived', x = 'family',
+            kind='count', saturation=0.5)
+sns.catplot(data = y,hue = 'Survived', x = 'family',
+            col = 'Sex',kind='count', saturation=0.5)
+# Мы наблюдаем некую форму графика, а это означает, что у вычисленной переменной есть хорошее влияние на выживаемость. Такую переменную необходимо оставить для увеличения предсказательной способности.
+# Чем меньше семья- тем больше шансов выжить. Дополнительно можно посмотреть как размер семьи повлиял на выживаемость внутри гендерных групп.
+# Модель "Baseline" на основе логических выводов
+# 1 вариант модели ("смерть" всем мужчинам в третьем классе, всем мужчинам старше 50, всем семьям, в которых больше 3 человек)
+y['result'] = 1
+y.loc[(y.Sex == 'male')&(y.Pclass == 3), 'result'] = 0
+y.loc[(y.Sex == 'male')&(y.Age > 50), 'result'] = 0
+y.loc[y['family']>3, 'result'] = 0
+y['errors'] = (y.Survived - y.result)**2
+1 - y.errors.sum() / y.shape[0]
+# 2 вариант модели ( + критерий "смерть" мужчинам от 29 до 39 лет )
+y.loc[(y.Sex == 'male')&(y.Age >=29)&(y.Age <=39), 'result'] = 0
+y['errors'] = (y.Survived - y.result)**2
+1 - y.errors.sum() / y.shape[0]
+# 3 вариант модели (предсказать спасение детей)
+y['alive'] = 0
+y.loc[(y.Sex == 'female')&((y.Pclass == 1)&
+                             (y.Pclass == 2)), 'alive'] = 1
+y.loc[y.Age < 6, 'alive'] = 1
+y.loc[(y.Sex == 'female')&
+       (y['family'] < 2), 'alive'] = 1
+Минимальный показатель возраста 0,17, так как на борту Титаника была 2 месячная Миллвина Дин. Продав трактир, Дины, как и некоторые пассажиры, купили билеты не на «Титаник», а на другой корабль (вероятно, это был «Адриатик»), но из-за разразившейся в том году забастовки угольщиков, в итоге попали на борт злополучного лайнера в качестве пассажиров 3-го класса.
+Максимальный показатель возраста 80 лет Г-н Элджернон Генри Баркворт, человек, который выжил при крушении. Баркворт сел на «Титаник» в Саутгемптоне в качестве пассажира первого класса (номер билета 27042, который стоил 30 фунтов стерлингов), и он занял салон A23.
+Средний возраст 29 лет.
+Максимальная стоимость билета 512 долларов. 
+Средняя стоимость 14,5 долларов.
+Кто-то путешествовал семьёй, а кто-то в одиночку, так есть минимальное число 0 в family и минимальное 10. В моделях я также анализировала, что семья влияет на выживаемость 
+
