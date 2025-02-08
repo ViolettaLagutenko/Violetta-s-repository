@@ -254,3 +254,621 @@ y.loc[(y.Sex == 'female')&
 Средняя стоимость 14,5 долларов.
 Кто-то путешествовал семьёй, а кто-то в одиночку, так есть минимальное число 0 в family и минимальное 10. В моделях я также анализировала, что семья влияет на выживаемость 
 
+
+
+
+
+
+
+Задание на 8 февраля
+Задание по факультативу Программирование (в продолжение Титаник): 
+1. Подготовить описание всех используемых методов pandas и numpy на примере ваших данных. Например, если вы применяете df[[‘col1’]].T то он выделяет столбец col1, транспонирует  его для того чтобы далее осуществить мерж с горизонтальной таблицей df2 (там где данные в строчку, а не по столбцу). Вы описываете каждый метод, что он делает с вашими данными и зачем. 
+2. К каждому используемому методу подобрать альтернативу. Т. е. написать другой код, который выполняет то же действие, но с помощью  другой библиотеки или классического Python. (Это не касается модельно части, там, где мы обучаем объект класса. Касается только обработки данных).
+
+Ориентировочный Срок 8 февраля
+Команда 1
+# чтение данных
+df = pd.read_csv('train.csv')
+df.info()
+Эта команда нужна для того, чтобы прочитать данные. Она считывает значения, разделенные запятыми (csv – comma-separated values).
+Альтернативная функция 
+import csv
+with open('train.csv', mode='r') as file:
+    csv_reader = csv.reader(file)
+    for row in csv_reader:
+        print(row)
+иной вариант 
+csv_file_path: путь 
+Команда 2
+
+#проверим пропущенные значения
+df.isnull().sum()
+Эта часть проверяет каждый элемент DataFrame df на наличие пропущенных значений (NaN - Not a Number).  Результат – булевый DataFrame (таблица истинности), где True обозначает пропущенное значение, а False - нет. Затем к этому булевому DataFrame применяется метод sum().  Для каждого столбца (по умолчанию) он суммирует количество True значений (т.е., количество пропущенных значений).  Результат – Series Pandas, где индексы – названия столбцов, а значения – количество пропущенных значений в каждом столбце.
+
+Альтернативная функция 
+
+df.isna().sum()
+
+Команда 3
+
+#отбор числовых колонок
+df_numeric = df.select_dtypes(include=[np.number])
+Этот метод выбирает только те колонки из DataFrame df, которые имеют числовой тип данных. np.number — это специальный тип, который включает все числовые типы, такие как целые числа (int) и числа с плавающей запятой (float). В результате выполнения этой строки создается новый DataFrame, содержащий только числовые колонки.
+
+numeric_cols = df_numeric.columns.values
+Здесь мы получаем массив названий колонок из отобранного DataFrame df_numeric. Метод columns возвращает объект Index, а values преобразует его в массив NumPy.
+
+print(numeric_cols)
+Эта строка выводит на экран массив названий числовых колонок.
+
+Альтернатива кода 
+numeric_cols = [col for col in df.columns if pd.api.types.is_numeric_dtype(df[col])]
+df_numeric = df[numeric_cols]
+Команда 4
+
+# отбор нечисловых колонок 
+# отбор нечислловых колонок для train
+df_non_numeric = df.select_dtypes(exclude=[np.number])
+Выбирает столбцы DataFrame df, которые не являются числовыми (целочисленные, с плавающей точкой).  select_dtypes — функция Pandas, которая позволяет выбрать столбцы по типу данных.  exclude=[np.number] указывает, что нужно исключить числовые типы.
+non_numeric_cols = df_non_numeric.columns.values
+Извлекает названия столбцов из df_non_numeric (нечисловых столбцов) и сохраняет их в виде NumPy массива non_numeric_cols.
+print(numeric_cols)
+print(non_numeric_cols)
+Выводит на печать списки названий числовых и нечисловых столбцов.  numeric_cols  должен быть определен ранее в коде (не показан в предоставленном фрагменте).
+
+cols = df.columns
+Сохраняет все названия столбцов DataFrame df в переменную cols.
+
+colors = ['#FFC0CB', '#008000'] 
+a = sns.heatmap(df[cols].isnull(), cmap=sns.color_palette(colors))
+for i, col in enumerate(df.columns):
+    pct_missing = np.mean(df[col].isnull())
+    print('{} - {}%'.format(col, round(pct_missing*100)))
+    if i>=10:
+        break
+Строит heatmap (тепловую карту) с помощью библиотеки Seaborn (sns).  df[cols].isnull() создает булевый DataFrame, где True соответствует пропущенному значению. cmap задает цветовую палитру: #FFC0CB (розовый) и #008000 (зеленый).
+
+Альтернативный код
+import dask.dataframe as dd
+import matplotlib.pyplot as plt
+# Загрузка данных с помощью Dask
+ddf = dd.read_csv("your_data.csv")
+# Подсчет пропущенных значений (параллельно)
+missing_counts = ddf.isnull().sum() - FORBIDDEN - pute()
+# Вывод процентных значений
+for col, count in missing_counts.items():
+    pct_missing = (count / len(ddf)) - FORBIDDEN - pute() * 100
+    print(f'{col} - {pct_missing:.2f}%')
+# Heatmap (этот шаг будет сложным для очень больших данных и может потребовать дополнительных оптимизаций)
+# ...  (Нужно реализовать эффективную визуализацию с Dask или перевести в Pandas после предварительной обработки) ...
+Команда 5
+
+# отбросить признак с большим количеством пропущенных данных cabin
+df.drop(columns = 'Cabin', axis = 1, inplace = True)
+print(df)
+df.drop() — это метод в библиотеке Pandas, который используется для удаления указанных строк или колонок из DataFrame.В нашем случае наибольшее количество пропущенных данных cabin,поэтому мы удалям полностью этот признак 
+
+Альтернативный код
+import dask.dataframe as dd
+
+# Создаем Dask DataFrame из Pandas DataFrame
+ddf = dd.from_pandas(df, npartitions=1)
+
+# Удаляем колонку 'Cabin'
+ddf = ddf.drop(columns='Cabin')
+
+# Вызываем compute() для получения результата
+print(ddf.compute())
+Команда 6
+
+# заменить в возрасте пропуски на медианное значение 
+med = df['Age'].median()
+Этот код вычисляет медианное значение возраста в колонке "Age" DataFrame df. Медиана — это значение, которое делит набор данных на две равные части, где половина значений меньше медианы, а другая половина — больше.
+print(med)
+Этот код выводит вычисленное медианное значение на экран. Это может помочь вам понять, какое значение будет использоваться для заполнения пропусков.
+df['Age'] = df['Age'].fillna(med)
+Этот код заменяет все пропуски (NaN) в колонке "Age" на ранее вычисленное медианное значение. Метод fillna() используется для заполнения пропусков в данных, что позволяет сохранить количество строк в DataFrame и избегать потери информации.
+Альтернатива кода
+df['Age'] = df['Age'].apply(lambda x: med if pd.isnull(x) else x)
+Здесь используется метод apply() для применения функции к каждому элементу колонки "Age". Если элемент является NaN, он заменяется на медиану med, иначе остается без изменений.
+
+Команда 7
+
+# удалить строки в Embarked
+df.dropna(inplace = True)
+df.isnull().sum()
+Этот метод удаляет все строки из DataFrame df, содержащие хотя бы одно значение NaN (Not a Number,  пропущенное значение).  inplace = True  означает, что изменения применяются непосредственно к исходному DataFrame df, а не создается его копия.  Без inplace = True  функция вернула бы новый DataFrame без пропущенных значений, а исходный df остался бы неизменным. Пропущенные значения часто создают проблемы при анализе данных. Некоторые алгоритмы машинного обучения не могут работать с NaN, а их наличие может исказить результаты анализа. Удаление строк с NaN – это один из способов обработки пропущенных данных, хотя и не всегда лучший (иногда лучше использовать другие методы, например, заполнение пропущенных значений средними значениями или предсказание их с помощью моделей).  В данном случае,  команда удаляет строки, в которых есть пропущенные значения в столбце Embarked.
+Альтернатива кода 
+import numpy as np
+
+def count_nans(data):
+  """Подсчитывает количество NaN в каждой колонке"""
+  nan_counts = []
+  for col_index in range(len(data[0])): # предполагаем, что все строки одинаковой длины
+      column = [row[col_index] for row in data]
+      nan_count = np.sum(np.isnan(column))
+      nan_counts.append(nan_count)
+  return nan_counts
+Команда 8
+#категориальные переменные 
+# применим one-hot encoding к переменной Sex (пол) с помощью функции pd.get_dummies()
+pd.get_dummies(df['Sex']).head(3)
+df['Sex']:  Эта часть кода выбирает столбец с именем 'Sex' из DataFrame df. Предполагается, что этот столбец содержит категориальные данные, например, 'male' и 'female'.
+pd.get_dummies(...): Это функция из библиотеки Pandas, которая выполняет one-hot encoding.  One-hot encoding – это метод преобразования категориальных переменных в числовые, которые могут быть использованы в алгоритмах машинного обучения.  Для каждой уникальной категории в столбце 'Sex' создается новый бинарный столбец (столбец с значениями 0 и 1).
+ head(3): Этот метод отображает первые 3 строки результата. Это используется для краткого просмотра результатов преобразования.
+Функция pd.get_dummies() берет столбец df['Sex'], скажем, с значениями ['male', 'female', 'male', 'female', ...], и создает новый DataFrame с двумя столбцами:
+Столбец 'Sex_female'  со значениями 1, если исходное значение в столбце 'Sex' было 'female', и 0 в противном случае.
+Столбец 'Sex_male' со значениями 1, если исходное значение в столбце 'Sex' было 'male', и 0 в противном случае.
+Многие алгоритмы машинного обучения не могут напрямую работать с категориальными данными в виде строк ('male', 'female').  One-hot encoding преобразует эти данные в числовой формат, который эти алгоритмы понимают.  Это позволяет использовать информацию о поле в модели, например, при прогнозировании выживаемости пассажиров Титаника (частый пример использования этого набора данных).  Бинарное представление категорий не предполагает никакой иерархии или упорядоченности между категориями (в отличие от порядкового кодирования).
+def one_hot_encode(column):
+    unique_values = set(column)
+    encoded_data = []
+    for value in column:
+        encoded_row = [1 if val == value else 0 for val in unique_values]
+        encoded_data.append(encoded_row)
+    return encoded_data, list(unique_values) # Возвращаем закодированные данные и список уникальных значений
+Команда 9
+
+# вновь скачаем датафрейм с единственным столбцом Sex
+previous = pd.read_csv('train.csv')[['Sex']]
+previous.head()
+pd.read_csv('train.csv'): Эта часть кода использует функцию read_csv из библиотеки Pandas для чтения файла train.csv, который, предположительно, содержит данные в формате CSV (Comma Separated Values).  Результат – это DataFrame Pandas, содержащий все данные из файла.
+[['Sex']]:  Это выбирает только столбец с именем 'Sex' из DataFrame, созданного на предыдущем шаге.  Двойные квадратные скобки [[...]] необходимы, потому что  ['Sex']  вернет Series (одномерный массив), а нам нужен DataFrame (двумерный массив) даже если он содержит только один столбец.
+.head():  Эта функция отображает первые 5 строк  DataFrame previous. Это полезно для быстрого просмотра данных и проверки того, что данные были загружены корректно.  Можно указать количество строк, например .head(10) для первых 10 строк.
+Альтернатива кода 
+def read_csv_python(filename, column_name):
+    data = []
+    with open(filename, 'r') as file:
+        header = file.readline().strip().split(',') # Читаем заголовок
+        column_index = header.index(column_name) # Находим индекс нужного столбца
+        for line in file:
+            row = line.strip().split(',')
+            data.append(row[column_index])
+    return data
+sex_data = read_csv_python('train.csv', 'Sex')
+print(sex_data[:5]) # Первые 5 строк
+
+
+Команда 10
+# закодируем переменную через 0 и 1
+pd.get_dummies(previous['Sex'], dtype = int).head(3)
+previous['Sex']:  Выбирает столбец 'Sex' из DataFrame previous.  Этот столбец, вероятно, содержит категориальные значения, например, 'male' и 'female'.
+pd.get_dummies(...):  Функция Pandas get_dummies создает one-hot encoding.  Для каждой уникальной категории в столбце 'Sex' создается новый столбец.  Значения в этих новых столбцах будут 1, если строка соответствует категории, и 0 в противном случае.
+dtype=int: Этот аргумент указывает, что тип данных в результирующих столбцах должен быть целым числом (int).  По умолчанию get_dummies создает столбцы с типом данных uint8 (беззнаковое 8-битное целое), но явное указание int делает код более читаемым и иногда может быть полезно для совместимости с другими библиотеками.
+.head(3): Отображает первые 3 строки нового DataFrame, созданного функцией get_dummies.
+Альтернативный код
+def one_hot_encode_python(column):
+    """Выполняет one-hot encoding в чистом Python."""
+    unique_values = sorted(list(set(column))) # Сортируем для стабильности
+    num_unique = len(unique_values)
+    encoded_data = []
+    for val in column:
+        encoded_row = [1 if unique_values[i] == val else 0 for i in range(num_unique)]
+        encoded_data.append(encoded_row)
+    return encoded_data, unique_values # Возвращаем данные и список уникальных значений (для имен столбцов)
+sex_column = ['male', 'female', 'male']
+encoded_data, unique_values = one_hot_encode_python(sex_column)
+print(encoded_data[:3]) # Первые 3 строки
+print(unique_values) # Имена столбцов
+
+Команда 11
+# удалим первый столбец, он избыточен
+sex = pd.get_dummies(df['Sex'], drop_first = True)
+sex.head(3)
+df['Sex']:  Выбирает столбец 'Sex' из DataFrame df.  Этот столбец содержит категориальные значения, например, 'male' и 'female'.
+pd.get_dummies(..., drop_first=True):  Это функция Pandas, которая создает one-hot encoding.  drop_first=True  — ключевой параметр.  Он удаляет первый столбец, созданный one-hot encoding'ом.  Например, если у вас есть категории 'male' и 'female', то  get_dummies по умолчанию создаст два столбца: 'male' и 'female'.  С drop_first=True останется только один столбец (например, 'female').  Значение 1 в этом столбце будет означать 'female', а 0 — 'male'.
+sex = ...: Результат one-hot encoding присваивается переменной sex.
+.head(3): Отображает первые три строки нового DataFrame sex.
+Альтернатива кода 
+def one_hot_encode_drop_first(column):
+    """One-hot encoding с удалением первого столбца."""
+    unique_values = sorted(list(set(column)))
+    encoded_data = []
+    for val in column:
+        index = unique_values.index(val)
+        encoded_row = [1 if i == index else 0 for i in range(1, len(unique_values))] # Начинаем с индекса 1
+        encoded_data.append(encoded_row)
+    return encoded_data, unique_values[1:] # Возвращаем данные и имена столбцов без первого
+sex_column = ['male', 'female', 'male', 'female', 'male']
+encoded_data, unique_values = one_hot_encode_drop_first(sex_column)
+print(encoded_data[:3])  # Первые три строки
+print(unique_values)     # Имена столбцов
+Команда 12
+
+# закодируем переменные чере 0 и 1 Pclass и Embarked.
+embarked = pd.get_dummies(df['Embarked'], drop_first = True)
+pclass = pd.get_dummies(df['Pclass'], drop_first = True)
+df = pd.concat([df, pclass, sex, embarked], axis = 1)
+df.head(3)
+embarked = pd.get_dummies(df['Embarked'], drop_first=True):  Выполняет one-hot encoding для столбца 'Embarked'. drop_first=True удаляет первый столбец, созданный one-hot encoding'ом, чтобы избежать мультиколлинеарности.  Результат – новый DataFrame embarked с кодированными столбцами.
+pclass = pd.get_dummies(df['Pclass'], drop_first=True):  Аналогично, выполняет one-hot encoding для столбца 'Pclass' с удалением первого столбца. Результат – новый DataFrame pclass.
+sex = pd.get_dummies(df['Sex'], drop_first=True): (Предполагается, что эта строка была выполнена ранее).  One-hot encoding для столбца 'Sex' с удалением первого столбца.
+df = pd.concat([df, pclass, sex, embarked], axis=1):  Объединяет исходный DataFrame df с новыми DataFrame pclass, sex, и embarked по горизонтали (по столбцам,  axis=1).  Новые закодированные столбцы добавляются к исходному DataFrame.
+df.head(3): Отображает первые три строки измененного DataFrame df.
+
+Альтернатива кода
+import numpy as np
+from sklearn.preprocessing import OneHotEncoder
+def onehot_encode_sklearn(df, cols):
+    for col in cols:
+        enc = OneHotEncoder(handle_unknown='ignore', sparse_output=False, dtype=int)
+        encoded = enc.fit_transform(df[[col]])
+        encoded_df = pd.DataFrame(encoded, columns=enc.categories_[0][1:]) # Удаляем первый столбец и присваиваем имена
+        df = pd.concat([df, encoded_df], axis=1)
+        df.drop(columns=[col], inplace=True)  # Удаляем исходный столбец
+    return df
+df = onehot_encode_sklearn(df, ['Embarked', 'Pclass'])
+print(df.head(3))
+Команда 13
+#отбор признаков
+# применим метод .drop() к соответствующим столбцам
+df.drop(['PassengerId', 'Pclass', 'Name', 'Sex', 'Ticket', 'Embarked'], axis = 1, inplace = True)
+df.head(3)
+df.drop(...): Это метод Pandas DataFrame, который удаляет строки или столбцы из DataFrame.
+['PassengerId', 'Pclass', 'Name', 'Sex', 'Ticket', 'Embarked']: Это список имен столбцов, которые нужно удалить.
+axis=1:  Этот параметр указывает, что нужно удалять столбцы (axis=0 удаляет строки).
+inplace=True:  Этот параметр указывает, что изменения должны быть внесены непосредственно в исходный DataFrame df.  Без inplace=True, drop() вернул бы новый DataFrame без указанных столбцов, а исходный df остался бы неизменным.
+.head(3): Отображает первые три строки DataFrame df после удаления столбцов.
+Альтернатива кода с помощью list comprehension (чистый Python):
+
+columns_to_drop = ['PassengerId', 'Pclass', 'Name', 'Sex', 'Ticket', 'Embarked']
+header = df[0]
+indices_to_keep = [i for i, col in enumerate(header) if col not in columns_to_drop]
+new_df = [[row[i] for i in indices_to_keep] for row in df[1:]] # исключаем заголовок
+new_header = [header[i] for i in indices_to_keep]
+new_df = [new_header] + new_df # добавляем заголовок обратно
+for row in new_df[:3]:
+    print(row)
+Команда 14
+# нормализация данных
+# импортируем класс StandardScaler
+from sklearn.preprocessing import StandardScaler
+Этот код импортирует необходимый класс для выполнения стандартизации (z-score normalization) данных.  StandardScaler – это трансформер данных в scikit-learn, который преобразует данные, вычитая среднее значение и деля на стандартное отклонение для каждого признака.  Это приводит к тому, что данные имеют нулевое среднее значение и единичное стандартное отклонение.
+Альтернативный код с помощью библиотеки scipy:
+scipy предоставляет мощные инструменты для научных вычислений, включая нормализацию данных.
+import numpy as np
+from scipy.stats import zscore
+standardized_data = zscore(data, axis=0, ddof=1) # ddof=1 для выборочной дисперсии
+print(standardized_data)
+zscore из scipy.stats выполняет ту же операцию, что и StandardScaler.  axis=0 указывает на нормализацию по столбцам (признакам).  ddof=1  использует выборочное стандартное отклонение.
+Команда 15
+
+# создадим объект этого класса
+scaler = StandardScaler()
+Строка кода scaler = StandardScaler() создает экземпляр класса StandardScaler из библиотеки sklearn.preprocessing
+StandardScaler — это трансформер данных, который выполняет стандартизацию (или z-преобразование).  Он преобразует каждый признак (столбец) в вашем наборе данных таким образом, чтобы он имел среднее значение, равное 0, и стандартное отклонение, равное 1.  
+Альтернатива кода 
+import numpy as np
+class MyStandardScaler:
+    def _init_(self):
+        self.mean_ = None
+        self.std_ = None
+    def fit(self, X):
+        X = np.array(X)
+        self.mean_ = np.mean(X, axis=0)
+        self.std_ = np.std(X, axis=0, ddof=1) # ddof=1 для выборочной дисперсии
+        self.std_[self.std_ == 0] = 1 #Обработка нулевого стандартного отклонения
+    def transform(self, X):
+        X = np.array(X)
+        return (X - self.mean_) / self.std_
+Команда 16
+
+# выберем те столбцы, которые мы хотим масштабировать
+cols_to_scale = ['Age', 'Fare']
+Строка cols_to_scale = ['Age', 'Fare'] создает список, содержащий имена столбцов ('Age' и 'Fare'), которые будут масштабированы (в данном случае, предположительно, с помощью StandardScaler или аналогичного метода).  
+Альтернатива кода 
+import pandas as pd
+def scale_columns_apply(df, cols_to_scale):
+    df_scaled = df.copy()
+    for col in cols_to_scale:
+        if col in df_scaled.columns:
+            mean = df_scaled[col].mean()
+            std = df_scaled[col].std(ddof=1)
+            if std == 0:
+                std = 1
+            df_scaled[col] = df_scaled[col].apply(lambda x: (x - mean) / std)
+    return df_scaled
+Команда 17
+
+# рассчитаем среднее арифметическое и СКО для масштабирования данных
+scaler.fit(df[cols_to_scale])
+
+from sklearn.preprocessing import StandardScaler
+
+scaled_data = StandardScaler().fit_transform(df[cols_to_scale])
+
+Команда 18
+
+# применим их
+df[cols_to_scale] = scaler.transform(df[cols_to_scale])
+df[cols_to_scale] (слева от знака равенства):  Эта часть выбирает столбцы DataFrame df, указанные в списке cols_to_scale (например, ['Age', 'Fare']).  Это левая часть присваивания, то есть сюда будут записаны результаты преобразования.
+scaler.transform(df[cols_to_scale]) (справа от знака равенства): Эта часть вызывает метод transform объекта scaler (предположительно, экземпляр StandardScaler из scikit-learn).  Метод transform применяет стандартизацию к данным, используя средние значения и стандартные отклонения, вычисленные ранее методом fit.
+= :  Оператор присваивания.  Результат вызова scaler.transform()  присваивается выбранным столбцам исходного DataFrame df.  Это меняет исходный DataFrame df на месте.
+Альтернатива кода 
+import numpy as np
+import pandas as pd
+def transform_data(df, cols_to_scale, means, stds):
+    """Стандартизирует данные, используя вычисленные средние и стандартные отклонения."""
+    df_scaled = df.copy()
+    for col in cols_to_scale:
+        if col in df_scaled.columns:
+            df_scaled[col] = (df_scaled[col] - means[col]) / stds[col]
+    return df_scaled
+Команда 19
+
+# посмотрим на результат
+df.head(3)
+df.columns
+df: Это переменная, которая, предположительно, содержит Pandas DataFrame.
+.head(3): Это метод DataFrame, который возвращает первые 3 строки DataFrame.  Если DataFrame содержит меньше 3 строк, то будут возвращены все строки.  Этот метод полезен для быстрого просмотра содержимого DataFrame и проверки того, что данные загружены и обработаны корректно.  Можно указать другое число в скобках, например, df.head(5) вернет первые 5 строк.
+df:  Опять же, переменная, содержащая Pandas DataFrame.
+.columns: Это атрибут DataFrame, который возвращает объект Index, содержащий названия столбцов DataFrame.  Этот объект можно преобразовать в список, например, list(df.columns).
+Альтернатива кода 
+print(data_list[:3])
+print(row)
+Команда 20
+
+#Название переменных 2 и 3 (второй и третий классы) выражены числами, а не строками (их выдает отсутствие кавычек в коде ниже). Так быть не должно.
+#Преобразуем эти переменные в тип str через функцию map()
+df.columns = df.columns.map(str)
+df.columns:  Это атрибут Pandas DataFrame, который возвращает объект Index, содержащий названия столбцов.  Этот объект Index ведет себя подобно массиву.
+.map(str):  Это метод объекта Index, который применяет функцию str к каждому элементу Index (т.е. к каждому названию столбца).  Функция str преобразует любой объект в его строковое представление.  Если название столбца уже является строкой, оно останется неизменным.  Если название столбца имеет другой тип данных (например, число), то оно будет преобразовано в строку.
+df.columns = ...:  Результат применения .map(str) (то есть новый Index со строковыми названиями столбцов) присваивается обратно атрибуту df.columns.  Это изменяет названия столбцов DataFrame df на месте.
+Альтернатива кода 
+df.columns = df.columns.to_series().apply(str)
+
+
+Команда 21
+
+#разделим обущающую выборку на признаки и целевую переменную
+# поместим в X_df все кроме столбца Survived
+x_df = df.drop('Survived', axis = 1)
+df.drop('Survived', axis = 1):  Эта часть кода использует метод drop() из библиотеки Pandas для удаления столбца с именем 'Survived' из DataFrame df.  axis = 1 указывает, что нужно удалить столбец (axis=0 удаляет строки).  Столбец 'Survived', предположительно, содержит целевую переменную, которую мы хотим предсказать (например, выжил пассажир или нет в контексте задачи "Титаник").
+x_df = ...:  Результат операции drop(), то есть DataFrame без столбца 'Survived',  присваивается переменной x_df.  x_df теперь содержит все признаки (независимые переменные), которые будут использоваться для предсказания целевой переменной.
+Альтернативный код 
+x_df = [{k: v for k, v in row.items() if k != 'Survived'} for row in df]
+Команда 22
+
+# столбец 'Survived' станет нашей целевой переменной (y_df)
+y_df = df['Survived']
+x_df.head(3)
+df['Survived']:  Эта часть кода использует доступ по ключу (названию столбца) в Pandas DataFrame.  Она выбирает столбец с именем 'Survived' из DataFrame df.  Этот столбец, как предполагается, содержит информацию о том, выжил пассажир или нет (вероятно, 1 для выживших и 0 для погибших).
+y_df = ...:  Выбранный столбец 'Survived'  присваивается переменной y_df.  y_df теперь содержит целевую переменную, которую мы хотим предсказать с помощью модели машинного обучения.
+Альтернатива кода 
+y_df = [row['Survived'] for row in df]
+
+
+Команда 23
+
+# обучение модели логистической регрессии
+# импортируем логистическую регрессию из модуля linear_model библиотеки sklearn
+from sklearn.linear_model import LogisticRegression
+LogisticRegression(): Это вызов конструктора класса LogisticRegression.  Конструктор — это специальный метод, который инициализирует новый объект класса.  Без аргументов он создает модель логистической регрессии с параметрами по умолчанию.  Эти параметры по умолчанию включают в себя различные настройки, такие как тип решателя (алгоритм оптимизации), регуляризация (L2 по умолчанию) и другие.  Более подробно о параметрах можно узнать в документации scikit-learn.
+model = ...:  Результат вызова конструктора (новый объект LogisticRegression) присваивается переменной model.  Теперь переменная model ссылается на этот объект, который представляет собой не обученную модель логистической регрессии.  На ней еще не проводилось обучение на каких-либо данных.
+сlass SimpleLogisticRegression:
+    def _init_(self, penalty='l2', C=1.0, solver='lbfgs'): # Пример некоторых параметров
+        self.penalty = penalty
+        self.C = C
+        self.solver = solver
+        self.coefficients = None  # Будут храниться после обучения (в настоящей модели)
+# Создание объекта
+simple_model = SimpleLogisticRegression(penalty='l1', C=0.1)
+print(f"Penalty: {simple_model.penalty}, C: {simple_model.C}, Solver: {simple_model.solver}")
+Команда 24
+
+ 
+# создадим объект этого класса и запишем его в переменную model
+model = LogisticRegression()
+ Команда 25
+
+# обучим нашу модель
+model.fit(x_df, y_df)
+model: Это объект класса LogisticRegression, созданный ранее. Он содержит параметры модели, которые будут настроены во время обучения.
+.fit(x_df, y_df): Это метод класса LogisticRegression, который выполняет обучение модели.
+ x_df: Это DataFrame (или numpy array), содержащий обучающие данные – признаки (features) или независимые переменные.  Каждая строка представляет один образец данных, а каждый столбец – один признак.
+ y_df: Это DataFrame (или numpy array), содержащий целевую переменную (target variable) или зависимую переменную.  Это метки классов (0 или 1 для бинарной классификации), соответствующие каждому образцу в x_df.  y_df должен иметь такое же количество строк, как и x_df.
+Метод fit() использует алгоритм оптимизации (по умолчанию это LBFGS, но это можно изменить при создании объекта LogisticRegression) для нахождения оптимальных весов (коэффициентов) для линейной комбинации признаков.  Этот алгоритм минимизирует функцию потерь (обычно логистическую функцию потерь), которая измеряет разницу между предсказаниями модели и фактическими значениями целевой переменной.  В результате обучения,  в объекте model обновляются внутренние атрибуты, содержащие эти оптимальные веса, которые затем будут использоваться для предсказаний.
+Альтернативный код 
+import numpy as np
+from scipy.special import expit # sigmoid function
+
+def simple_logistic_regression_fit(X, y, learning_rate=0.1, n_iterations=1000):
+    """ Упрощенное обучение логистической регрессии с помощью градиентного спуска."""
+    n_samples, n_features = X.shape
+    X = np.concatenate((np.ones((n_samples, 1)), X), axis=1) # Добавляем столбец смещения
+    theta = np.zeros(n_features + 1)
+
+    for _ in range(n_iterations):
+        z = np.dot(X, theta)
+        h = expit(z)
+        gradient = np.dot(X.T, (h - y)) / n_samples
+        theta -= learning_rate * gradient
+    return theta
+Команда 26
+# прогнозируем
+y_pred_df = model.predict(x_df)
+Метод predict() использует обученные веса из модели model для вычисления линейной комбинации признаков для каждого образца в x_df.  Результат этой комбинации пропускается через сигмоидную функцию, которая преобразует его в вероятность принадлежности к классу 1.  Если эта вероятность больше или равна 0.5, то предсказывается класс 1; иначе – класс 0.
+def simple_logistic_regression_predict(X, theta):
+    n_samples = X.shape[0]
+    X = np.concatenate((np.ones((n_samples, 1)), X), axis=1)  # Добавляем столбец смещения
+    probabilities = expit(np.dot(X, theta))
+    return (probabilities >= 0.5).astype(int)
+# Пример использования (предполагается, что theta уже обучено с помощью simple_logistic_regression_fit)
+x_np = x_df.values # Преобразование DataFrame в NumPy array
+y_pred_np = simple_logistic_regression_predict(x_np, theta) # Используем theta из предыдущего примера
+y_pred_df = pd.DataFrame(y_pred_np, columns=['prediction']) # Преобразуем обратно в DataFrame (опционально)
+print("Предсказанные классы:", y_pred_df)
+Команда 27
+
+# построим матрицу ошибок
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import ...: Эта конструкция импортирует конкретный элемент (функцию) из модуля metrics библиотеки sklearn.
+sklearn.metrics: Этот модуль содержит различные метрики для оценки качества моделей машинного обучения.
+confusion_matrix:  Это функция, которая создает матрицу ошибок (confusion matrix).
+Альтернативный код 
+import numpy as np
+def confusion_matrix_manual(y_true, y_pred, num_classes=None):
+    if num_classes is None:
+        num_classes = max(max(y_true), max(y_pred)) + 1 # 
+    cm = np.zeros((num_classes, num_classes), dtype=int)
+    for i in range(len(y_true)):
+        cm[y_true[i], y_pred[i]] += 1
+    return cm
+# Пример использования:
+y_true = np.array([0, 1, 1, 0, 1, 0])
+y_pred = np.array([0, 1, 0, 0, 1, 1])
+cm = confusion_matrix_manual(y_true, y_pred)
+print(cm)
+
+
+ Команда 28
+
+# передадим ей фактические и прогнозные значения
+conf_matrix = confusion_matrix(y_df, y_pred_df)
+import pandas as pd
+confusion_matrix(y_df, y_pred_df):  Это вызов функции confusion_matrix, импортированной ранее из sklearn.metrics.  Функция принимает два аргумента:
+y_df:  DataFrame (или NumPy array), содержащий истинные (фактические) значения целевой переменной.  Это те значения, которые модель пыталась предсказать.
+y_pred_df: DataFrame (или NumPy array), содержащий значения, предсказанные моделью логистической регрессии.
+def confusion_matrix_pandas(y_true, y_pred):
+    df = pd.DataFrame({'y_true': y_true, 'y_pred': y_pred})
+    return pd.crosstab(df['y_true'], df['y_pred'])
+ Команда 29
+
+# преобразуем в датафрейм
+conf_matrix_df = pd.DataFrame(conf_matrix)
+conf_matrix_df
+pd.DataFrame(conf_matrix):  Это вызов конструктора класса DataFrame из библиотеки pandas. Он принимает NumPy массив conf_matrix в качестве аргумента и создает DataFrame, где:
+Каждый элемент массива становится элементом DataFrame.
+Индексы строк и столбцов DataFrame будут соответствовать индексам массива (по умолчанию это будут целые числа от 0 до N-1, где N – размерность массива).
+Альтернативный код 
+conf_matrix_list = conf_matrix.tolist() 
+# Преобразуем NumPy array в список списков
+# Вывод (не такой удобный как DataFrame)
+for row in conf_matrix_list:
+    print(row)
+Команда 30
+
+# рассчитаем метрику accuracy вручную
+round((480 + 237)/(480 + 237 + 69 + 103), 3)
+#0,807 - На обучающей выборке наша модель показала результат в 80,7%.
+(480 + 237):  Это сумма истинно положительных (TP) и истинно отрицательных (TN) значений из матрицы ошибок.  Это количество правильно классифицированных образцов.
+(480 + 237 + 69 + 103):  Это сумма всех элементов матрицы ошибок (TP + TN + FP + FN).  Это общее количество образцов.
+/:  Деление суммы правильно классифицированных образцов на общее количество образцов дает долю правильно классифицированных образцов, то есть accuracy.
+round(..., 3):  Функция round() округляет результат до 3 знаков после запятой, чтобы получить более удобное для чтения значение.
+Альтернативный код 
+accuracy_np = np.sum([tp, tn]) / np.sum([tp, tn, fp, fn])
+print(f"Accuracy (NumPy): {accuracy_np:.3f}")
+
+Команда 31
+
+# среднее значение количества братьев и сестер или супругов на борту
+mean_SibSp = df['SibSp'].mean()
+print(mean_SibSp)
+# 0,5
+df['SibSp']:  Эта часть кода обращается к столбцу с именем "SibSp" в DataFrame df.  Предполагается, что df — это таблица данных, содержащая информацию о пассажирах Титаника, а столбец SibSp содержит число братьев, сестер и/или супругов каждого пассажира.
+.mean(): Это метод Pandas, применяемый к серии данных (столбцу SibSp).  Он вычисляет среднее арифметическое всех значений в этом столбце.
+mean_SibSp = ...: Результат вычисления среднего значения (число) присваивается переменной mean_SibSp.
+print(mean_SibSp):  Эта строка выводит значение переменной mean
+альтернативный код
+sibsp_list = list(df['SibSp']) # Преобразование Pandas Series в обычный список Python
+sum_sibsp = sum(sibsp_list)
+count_sibsp = len(sibsp_list)
+mean_SibSp = sum_sibsp / count_sibsp if count_sibsp > 0 else 0 # Обработка случая пустого списка
+print(mean_SibSp)
+Команда 32
+
+# среднее значение стоимости билета
+mean_Fare = df['Fare'].mean()
+print(mean_Fare)
+# 32,09
+df['Fare']:  Эта часть кода обращается к столбцу с именем "Fare" в DataFrame df.  Предполагается, что df — это таблица данных, содержащая информацию о пассажирах Титаника, а столбец Fare содержит стоимость билета каждого пассажира.
+.mean():  Это метод Pandas, применяемый к серии данных (столбцу Fare). Он вычисляет среднее арифметическое всех значений в этом столбце, игнорируя пропущенные значения (NaN).
+mean_Fare = ...: Результат вычисления среднего значения (число) присваивается переменной mean_Fare.
+print(mean_Fare): Эта строка выводит значение переменной mean_Fare (среднюю стоимость билета) на консоль. 
+Альтернативный код
+fare_data = np.array(df['Fare']) # Преобразуем Pandas Series в NumPy array
+mean_Fare = np.mean(fare_data)
+print(mean_Fare)
+Команда 33
+
+# описательные статистики
+df.describe()
+Метод df.describe() по умолчанию вычисляет следующие статистики для каждого числового столбца:
+* count: Количество не-пропущенных (не NaN) значений в столбце.
+* mean: Среднее арифметическое значение.
+* std: Стандартное отклонение (мера рассеивания данных вокруг среднего).
+* min: Минимальное значение.
+* 25%: Первый квартиль (25-й процентиль).
+* 50%: Медиана (второй квартиль, 50-й процентиль).
+* 75%: Третий квартиль (75-й процентиль).
+* max: Максимальное значение.
+Альтернативный код 
+descriptive_stats = df.agg({
+    col: ['mean', 'std', 'min', 'max'] for col in df.select_dtypes(include=['number'])
+})
+print(descriptive_stats)
+Команда 34
+
+# Построим гистограмму по возрасту отдельно для мужчин и женщин
+with sns.axes_style('whitegrid'):
+    plt.figure(figsize=(9, 5))
+    sns.histplot(data=df, x='Age', hue='Sex')
+with sns.axes_style('whitegrid')::  Этот контекстный менеджер устанавливает стиль сетки для осей графика.  'whitegrid'  означает, что оси будут иметь белый фон с серыми линиями сетки. Это улучшает читаемость графика.
+plt.figure(figsize=(9, 5)): Эта строка создает фигуру (холст) для графика с заданными размерами 9 дюймов в ширину и 5 дюймов в высоту.  Это обеспечивает достаточное пространство для отображения гистограммы.
+sns.histplot(data=df, x='Age', hue='Sex'): Это основная функция, которая строит гистограмму.
+data=df:  Указывает, что данные берутся из DataFrame df.
+x='Age':  Указывает, что на оси X отображается возраст (Age — столбец в DataFrame).
+hue='Sex':  Это ключевой параметр. Он указывает, что данные должны быть разделены по полу (Sex — столбец в DataFrame),  и для каждого пола будет построена своя гистограмма на одном графике.  Это позволяет сравнить распределение возраста между мужчинами и женщинами.
+Альтернатива кода
+import matplotlib.pyplot as plt
+import numpy as np
+# Разделяем данные по полу
+men = df[df['Sex'] == 'male']['Age'].dropna()
+women = df[df['Sex'] == 'female']['Age'].dropna()
+# Создаем гистограммы
+plt.figure(figsize=(9, 5))
+plt.hist(men, alpha=0.5, label='Мужчины', bins=20)  # alpha для прозрачности
+plt.hist(women, alpha=0.5, label='Женщины', bins=20)
+plt.xlabel('Возраст')
+plt.ylabel('Частота')
+plt.title('Распределение возраста среди мужчин и женщин')
+plt.legend(loc='upper right')
+plt.grid(True)
+plt.show()
+Команда 35
+
+# связь пола и класса
+pd.crosstab(df['Sex'], df['Pclass'], margins=True)
+pd.crosstab(...): Это функция из библиотеки Pandas, которая создает таблицу частот, показывающую, сколько раз каждая комбинация категорий встречается в данных.
+df['Sex']:  Указывает на столбец "Sex" (пол) в DataFrame df как первую переменную для анализа.
+df['Pclass']: Указывает на столбец "Pclass" (класс пассажира) в DataFrame df как вторую переменную.
+margins=True: Этот параметр добавляет к таблице итоговые строки и столбцы (маргины), показывающие общие количества для каждого пола и каждого класса, а также общее количество наблюдений.
+Альтернатива кода 
+result = df.groupby(['Sex', 'Pclass']).size().unstack(fill_value=0)
+result['All'] = result.sum(axis=1)
+result.loc['All'] = result.sum(axis=0)
+print(result)
+Команда 36
+
+# каков максимальный возраст среди пассажиров определенного пола для каждого класса
+pd.pivot_table(
+    df, 
+    values='Age', 
+    index='Sex',
+    columns='Pclass', 
+    aggfunc=np.max)
+df.groupby('Sex')['PassengerId'].count()
+df:  DataFrame, содержащий данные о пассажирах.
+values='Age': Указывает, что в ячейках таблицы будут значения из столбца 'Age' (возраст).
+index='Sex':  Указывает, что строки таблицы будут соответствовать значениям из столбца 'Sex' (пол).
+columns='Pclass': Указывает, что столбцы таблицы будут соответствовать значениям из столбца 'Pclass' (класс пассажира).
+aggfunc=np.max:  Задает агрегирующую функцию — np.max (максимум), которая будет применена к значениям 'Age' для каждой комбинации пола и класса.  Другими словами, в каждой ячейке будет указан максимальный возраст среди пассажиров данного пола и класса.
+df.groupby('Sex'):  Группирует DataFrame df по столбцу 'Sex' (пол).
+['PassengerId'].count():  Для каждой группы (каждого пола) подсчитывает количество значений в столбце 'PassengerId'.  Так как каждый пассажир имеет уникальный PassengerId,  это фактически подсчет количества пассажиров каждого пола.
+Альтернативный код
+result = df.groupby(['Sex', 'Pclass'])['Age'].max().unstack()
+print(result)
+from collections import Counter
+sex_counts = Counter(df['Sex'])
+print(sex_counts)
+
